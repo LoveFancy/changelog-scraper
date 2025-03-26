@@ -150,7 +150,10 @@ public class ChangelogScraper {
         return "N/A";
     }
 
-    private String cleanText(String text) {
+    public String cleanText(String text) {
+        if (text == null) {
+            return null;
+        }
         return text.replaceAll("\\s+", " ").trim();
     }
 

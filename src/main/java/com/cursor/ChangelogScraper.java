@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class ChangelogScraper {
     private static final String URL = "https://www.cursor.com/cn/changelog";
     private static final Pattern VERSION_PATTERN = Pattern.compile("([0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:-[a-zA-Z]+(?:\\.[0-9]+)?)?)");
-    private static final Pattern DATE_PATTERN = Pattern.compile("(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+(\\d{1,2}),?\\s+(\\d{4})");
+    private static final Pattern DATE_PATTERN = Pattern.compile("(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(?:of\\s+)?(\\d{4})", Pattern.CASE_INSENSITIVE);
     private static final Pattern UPDATE_PATTERN = Pattern.compile("UPDATE\\s*\\((.+?)\\):\\s*(.+)");
     private static final Pattern SIMPLE_UPDATE_PATTERN = Pattern.compile("Update:\\s*(.+)", Pattern.CASE_INSENSITIVE);
     
@@ -127,26 +127,49 @@ public class ChangelogScraper {
     }
 
     public String extractDate(Element block) {
-        Element article = block.parent();
-        if (article == null) {
-            return "N/A";
-        }
-
-        Elements dateDivs = article.select("div.inline-flex.items-center.font-mono");
-        for (Element div : dateDivs) {
-            Element dateP = div.selectFirst("p.uppercase");
-            if (dateP != null) {
-                String dateText = cleanText(dateP.text());
+        // 首先尝试从当前块的父元素中查找日期
+        Element parent = block.parent();
+        if (parent != null) {
+            // 查找所有可能包含日期的元素
+            Elements dateElements = parent.select("time, div.text-sm.text-gray-500, div.text-sm.text-gray-600, div.inline-flex.items-center.font-mono p.uppercase");
+            for (Element dateElement : dateElements) {
+                String dateText = cleanText(dateElement.text());
                 Matcher matcher = DATE_PATTERN.matcher(dateText);
                 if (matcher.find()) {
                     return String.format("%s-%s-%02d",
                         matcher.group(3),
-                        MONTH_MAP.get(matcher.group(1)),
+                        MONTH_MAP.get(matcher.group(1).substring(0, 3)),
                         Integer.parseInt(matcher.group(2))
                     );
                 }
             }
         }
+
+        // 如果在父元素中没找到，尝试从当前块中查找
+        String dateText = block.text();
+        Matcher matcher = DATE_PATTERN.matcher(dateText);
+        if (matcher.find()) {
+            return String.format("%s-%s-%02d",
+                matcher.group(3),
+                MONTH_MAP.get(matcher.group(1).substring(0, 3)),
+                Integer.parseInt(matcher.group(2))
+            );
+        }
+
+        // 如果还是找不到，尝试从兄弟元素中查找
+        Elements siblings = block.siblingElements();
+        for (Element sibling : siblings) {
+            dateText = cleanText(sibling.text());
+            matcher = DATE_PATTERN.matcher(dateText);
+            if (matcher.find()) {
+                return String.format("%s-%s-%02d",
+                    matcher.group(3),
+                    MONTH_MAP.get(matcher.group(1).substring(0, 3)),
+                    Integer.parseInt(matcher.group(2))
+                );
+            }
+        }
+
         return "N/A";
     }
 

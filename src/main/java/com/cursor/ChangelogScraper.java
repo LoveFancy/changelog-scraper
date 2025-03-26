@@ -54,19 +54,19 @@ public class ChangelogScraper {
                 }
 
                 // Parse version
-                String version = extractVersion(block.text());
+                final String version = extractVersion(block.text());
                 if (version == null) {
                     continue;
                 }
 
                 // Parse date
-                String date = extractDate(block);
+                final String date = extractDate(block);
 
                 // Parse content
-                List<String> content = new ArrayList<>();
-                List<String> simpleUpdates = new ArrayList<>();
-                String updateVersions = null;
-                String updateDescription = null;
+                final List<String> content = new ArrayList<>();
+                final List<String> simpleUpdates = new ArrayList<>();
+                final String[] updateVersions = {null};
+                final String[] updateDescription = {null};
 
                 Element current = block.nextElementSibling();
 
@@ -77,8 +77,8 @@ public class ChangelogScraper {
                             // Check for UPDATE info
                             Matcher updateMatcher = UPDATE_PATTERN.matcher(text);
                             if (updateMatcher.find()) {
-                                updateVersions = updateMatcher.group(1).trim();
-                                updateDescription = updateMatcher.group(2).trim();
+                                updateVersions[0] = updateMatcher.group(1).trim();
+                                updateDescription[0] = updateMatcher.group(2).trim();
                             }
                             
                             // Check for simple updates
@@ -93,14 +93,14 @@ public class ChangelogScraper {
                     current = current.nextElementSibling();
                 }
 
-                entries.add(new ChangelogEntry(
-                    version,
-                    date,
-                    updateVersions,
-                    updateDescription,
-                    content.isEmpty() ? null : content,
-                    simpleUpdates.isEmpty() ? null : simpleUpdates
-                ));
+                entries.add(new ChangelogEntry() {{
+                    setVersion(version);
+                    setDate(date);
+                    setUpdateVersions(updateVersions[0]);
+                    setUpdateDescription(updateDescription[0]);
+                    setContent(content.isEmpty() ? null : content);
+                    setSimpleUpdates(simpleUpdates.isEmpty() ? null : simpleUpdates);
+                }});
             }
 
             // Save as JSON

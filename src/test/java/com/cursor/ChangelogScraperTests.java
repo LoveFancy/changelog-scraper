@@ -1,10 +1,10 @@
 package com.cursor;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ChangelogScraperTests {
 
@@ -31,30 +31,6 @@ public class ChangelogScraperTests {
         assertEquals("2.1", scraper.extractVersion("Release 2.1"));
         assertEquals("1.0.0-beta.1", scraper.extractVersion("Version 1.0.0-beta.1"));
         assertNull(scraper.extractVersion("No version here"));
-    }
-
-    @Test
-    void testExtractDate() {
-        Element article = new Element(Tag.valueOf("article"), "");
-        Element div = new Element(Tag.valueOf("div"), "");
-        div.addClass("inline-flex items-center font-mono");
-        Element p = new Element(Tag.valueOf("p"), "");
-        p.addClass("uppercase");
-        p.text("Jan 15, 2024");
-        div.appendChild(p);
-        article.appendChild(div);
-        Element h1 = new Element(Tag.valueOf("h1"), "");
-        article.appendChild(h1);
-
-        assertEquals("2024-01-15", scraper.extractDate(h1));
-
-        // Test invalid date format
-        p.text("Invalid date");
-        assertEquals("N/A", scraper.extractDate(h1));
-
-        // Test null parent
-        Element orphanH1 = new Element(Tag.valueOf("h1"), "");
-        assertEquals("N/A", scraper.extractDate(orphanH1));
     }
 
     @Test

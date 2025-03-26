@@ -127,17 +127,25 @@ public class ChangelogScraper {
     }
 
     public String extractDate(Element block) {
-        Element article = block.parent();
-        if (article == null) {
-            return "N/A";
+        // 首先尝试从当前块中查找日期
+        String dateText = block.text();
+        Matcher matcher = DATE_PATTERN.matcher(dateText);
+        if (matcher.find()) {
+            return String.format("%s-%s-%02d",
+                matcher.group(3),
+                MONTH_MAP.get(matcher.group(1)),
+                Integer.parseInt(matcher.group(2))
+            );
         }
 
-        Elements dateDivs = article.select("div.inline-flex.items-center.font-mono");
-        for (Element div : dateDivs) {
-            Element dateP = div.selectFirst("p.uppercase");
-            if (dateP != null) {
-                String dateText = cleanText(dateP.text());
-                Matcher matcher = DATE_PATTERN.matcher(dateText);
+        // 如果当前块中没有日期，尝试从父元素中查找
+        Element parent = block.parent();
+        if (parent != null) {
+            // 查找所有可能包含日期的元素
+            Elements dateElements = parent.select("div.inline-flex.items-center.font-mono p.uppercase, div.text-sm.text-gray-500");
+            for (Element dateElement : dateElements) {
+                dateText = cleanText(dateElement.text());
+                matcher = DATE_PATTERN.matcher(dateText);
                 if (matcher.find()) {
                     return String.format("%s-%s-%02d",
                         matcher.group(3),

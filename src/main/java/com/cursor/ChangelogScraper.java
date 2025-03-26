@@ -53,36 +53,35 @@ public class ChangelogScraper {
                     continue;
                 }
 
-                ChangelogEntry entry = new ChangelogEntry();
-                
-                // 解析版本号
+                // Parse version
                 String version = extractVersion(block.text());
                 if (version == null) {
                     continue;
                 }
-                entry.setVersion(version);
 
-                // 解析日期
+                // Parse date
                 String date = extractDate(block);
-                entry.setDate(date);
 
-                // 解析内容
+                // Parse content
                 List<String> content = new ArrayList<>();
                 List<String> simpleUpdates = new ArrayList<>();
+                String updateVersions = null;
+                String updateDescription = null;
+
                 Element current = block.nextElementSibling();
 
                 while (current != null && !current.is("h1, h2")) {
                     if (current.is("p, ul, li")) {
                         String text = cleanText(current.text());
                         if (StringUtils.isNotBlank(text)) {
-                            // 检查是否包含UPDATE信息
+                            // Check for UPDATE info
                             Matcher updateMatcher = UPDATE_PATTERN.matcher(text);
                             if (updateMatcher.find()) {
-                                entry.setUpdateVersions(updateMatcher.group(1).trim());
-                                entry.setUpdateDescription(updateMatcher.group(2).trim());
+                                updateVersions = updateMatcher.group(1).trim();
+                                updateDescription = updateMatcher.group(2).trim();
                             }
                             
-                            // 检查是否是简单更新说明
+                            // Check for simple updates
                             Matcher simpleUpdateMatcher = SIMPLE_UPDATE_PATTERN.matcher(text);
                             if (simpleUpdateMatcher.find()) {
                                 simpleUpdates.add(simpleUpdateMatcher.group(1).trim());
@@ -94,32 +93,33 @@ public class ChangelogScraper {
                     current = current.nextElementSibling();
                 }
 
-                entry.setContent(content);
-                if (!simpleUpdates.isEmpty()) {
-                    entry.setSimpleUpdates(simpleUpdates);
-                }
-
-                entries.add(entry);
+                entries.add(new ChangelogEntry(
+                    version,
+                    date,
+                    updateVersions,
+                    updateDescription,
+                    content.isEmpty() ? null : content,
+                    simpleUpdates.isEmpty() ? null : simpleUpdates
+                ));
             }
 
-            // 保存为JSON文件
+            // Save as JSON
             ObjectMapper mapper = new ObjectMapper();
             mapper.writerWithDefaultPrettyPrinter()
                   .writeValue(new File("cursor_changelog.json"), entries);
 
-            System.out.println("成功抓取 " + entries.size() + " 条更新记录");
+            System.out.println("Successfully scraped " + entries.size() + " changelog entries");
             return entries;
 
         } catch (Exception e) {
-            System.err.println("抓取失败: " + e.getMessage());
+            System.err.println("Scraping failed: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
 
     private boolean containsVersionInfo(String text) {
-        text = text.toLowerCase();
-        return text.contains("v") || text.contains(".") || text.contains("version");
+        return text.toLowerCase().matches(".*[v.].*|.*version.*");
     }
 
     private String extractVersion(String text) {
@@ -140,10 +140,11 @@ public class ChangelogScraper {
                 String dateText = cleanText(dateP.text());
                 Matcher matcher = DATE_PATTERN.matcher(dateText);
                 if (matcher.find()) {
-                    String month = MONTH_MAP.get(matcher.group(1));
-                    String day = String.format("%02d", Integer.parseInt(matcher.group(2)));
-                    String year = matcher.group(3);
-                    return year + "-" + month + "-" + day;
+                    return String.format("%s-%s-%02d",
+                        matcher.group(3),
+                        MONTH_MAP.get(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))
+                    );
                 }
             }
         }

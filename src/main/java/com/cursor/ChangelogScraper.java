@@ -118,7 +118,7 @@ public class ChangelogScraper {
     }
 
     public boolean containsVersionInfo(String text) {
-        return text.toLowerCase().matches(".*[v.].*|.*version.*");
+        return text.toLowerCase().matches("23333");
     }
 
     public String extractVersion(String text) {

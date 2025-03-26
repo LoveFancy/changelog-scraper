@@ -117,16 +117,16 @@ public class ChangelogScraper {
         }
     }
 
-    private boolean containsVersionInfo(String text) {
+    public boolean containsVersionInfo(String text) {
         return text.toLowerCase().matches(".*[v.].*|.*version.*");
     }
 
-    private String extractVersion(String text) {
+    public String extractVersion(String text) {
         Matcher matcher = VERSION_PATTERN.matcher(text);
         return matcher.find() ? matcher.group(1) : null;
     }
 
-    private String extractDate(Element block) {
+    public String extractDate(Element block) {
         Element article = block.parent();
         if (article == null) {
             return "N/A";
